@@ -17,24 +17,32 @@
 
 clear
 clc
+close all
 
 %% Import ADS-B File 
-%Import CSV File
+%Import CSV File (Position)
 [file_adsb,path_adsb] = uigetfile('*.csv');
 filename_adsb=[path_adsb,file_adsb];
-filename_adsb=string(filename_adsb);
 flightdata=readtable(filename_adsb);
+[file_pos,path_pos] = uigetfile('*.csv');
+filename_pos=[path_pos,file_pos];
+flightdata_pos=readtable(filename_pos);
 
+
+%% Data Conversion/Filtering
 %Convert from LLA to ECEF Coordinates
 ecef=lla2ecef([flightdata.lat,...
     flightdata.lon,flightdata.baroaltitude],'WGS84');
 flightdata.x=ecef(:,1);
 flightdata.y=ecef(:,2);
 flightdata.z=ecef(:,3);
-%Convert cell to string array
-flightdata.icao24=string(flightdata.icao24);
-%Calculate flight path angle (from velocity, vertrate information)
-flightdata.pitch=atand(flightdata.vertrate./flightdata.velocity);
+
+%Calculate flight path angle (from velocity,  information)
+flightvel.pitch=atand(flightdata.vertrate./flightdata.velocity);
+
+%Smooth data over 10 second window for each aircraft 
+
+%Filter SV4 data
 
 %% Main Script
 
@@ -43,7 +51,11 @@ aircraft=unique(flightdata.icao24);
     cell(1,length(aircraft)),cell(1,length(aircraft)),cell(1,length(aircraft)), ...
     cell(1,length(aircraft)));
 for i=1:length(aircraft)
-    aircraft_path=flightdata(flightdata.icao24==aircraft(i),:);
+
+    
+    aircraft_path=flightdata(strcmp(flightdata.icao24,aircraft{i}),:);
+    aircraft_path.velocity=smoothdata(aircraft_path.velocity,'gaussian',10);
+    aircraft_path.heading=smoothdata(aircraft_path.heading,'gaussian',10);
     Delta{i}=DataProcessAngle(aircraft_path);
     Delta{i}=[0;Delta{i}];
     counter=1;
@@ -68,6 +80,8 @@ if choice==1
     PlotTurn(flightdata,aircraft,turning)
 else
 end
+
+plotnic(flightdata_pos)
     
 
 %% Data Conversion/Manipulation
@@ -93,7 +107,7 @@ function PlotTurn(flightdata,aircraft,turning)
     g=figure('color','w');
     gx=geoaxes;
     for i=1:length(aircraft)
-        aircraft_path=flightdata(flightdata.icao24==aircraft(i),:);
+        aircraft_path=flightdata(strcmp(flightdata.icao24,aircraft{i}),:);
         for j=1:length(turning{i})
             geoplot(aircraft_path.lat(turning{i}{j}),aircraft_path.lon(turning{i}{j}), ...
                 'go','MarkerSize',5,'MarkerFaceColor','g')
@@ -102,7 +116,41 @@ function PlotTurn(flightdata,aircraft,turning)
         geoplot(aircraft_path.lat,aircraft_path.lon,'b.','MarkerSize',0.5)
     end
     geobasemap('topographic')
+    dcm_obj = datacursormode(g);
+    set(dcm_obj,'UpdateFcn',{@myupdatefcn,flightdata})
+
     hold off
+end
+%% Function to plot by NIC value
+function plotnic(flightdata)
+    g=figure('color','w');
+    gx=geoaxes;
+    nic=unique(flightdata.nic);
+    for i=1:length(nic)
+        nic_value=flightdata(flightdata.nic==nic(i),:);
+        geoplot(nic_value.lat,nic_value.lon,'o','MarkerSize',1)
+        hold on
+    end
+    geobasemap('topographic')
+    legend(cellstr(num2str(nic)))
+    dcm_obj = datacursormode(g);
+    set(dcm_obj,'UpdateFcn',{@myupdatefcn,flightdata})
+
+    hold off
+end
+
+%Add additional information to data cursor on 2D topo map
+function txt = myupdatefcn(~,event_obj,table)
+    % Customizes text of data tips
+    pos = get(event_obj,'Position');
+    %find the row position in data set based on position values
+    row=find(abs(table.lat-pos(1))<0.0001 & abs(table.lon-pos(2))<0.0001);
+    txt = {['Longitude: ',num2str(pos(1))],...
+           ['Latitude: ',num2str(pos(2))],...
+           ['Time: ',num2str(table.mintime(row(1)))],...
+           ['Altitude: ',num2str(3.28084*table.alt(row(1)))],...
+           ['NIC: ',num2str(table.nic(row(1)))]};
+         %['ICAO: ',table.icao24(row)],...
 end
 
 
