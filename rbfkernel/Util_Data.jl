@@ -19,7 +19,7 @@ using Gtk
 using Plots
 
 struct Data
-    X::ColVecs{Float64, Matrix{Float64}, SubArray{Float64, 1, Matrix{Float64}, 
+    X::RowVecs{Float64, Matrix{Float64}, SubArray{Float64, 1, Matrix{Float64}, 
     Tuple{Int64, Base.Slice{Base.OneTo{Int64}}}, true}}         #Features
     Y::Vector{Float64}                                          #Labels
 end
