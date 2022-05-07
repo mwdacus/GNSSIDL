@@ -19,7 +19,7 @@ using Gtk
 using Plots
 
 struct Data
-    X::RowVecs{Float64, Matrix{Float64}, SubArray{Float64, 1, Matrix{Float64}, 
+    X::ColVecs{Float64, Matrix{Float64}, SubArray{Float64, 1, Matrix{Float64}, 
     Tuple{Int64, Base.Slice{Base.OneTo{Int64}}}, true}}         #Features
     Y::Vector{Float64}                                          #Labels
 end
@@ -42,7 +42,7 @@ function CreateDataSet(data)
     B[ind2].=2
     B[ind1].=1
     B[ind0].=0
-    return Data(RowVecs(A),B)
+    return Data(ColVecs(A),B)
 end
 
 #Split Data
