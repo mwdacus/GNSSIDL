@@ -49,13 +49,14 @@ end
 function SplitData(rawdata)
     n=size(rawdata,1)
     shuffledata=rawdata[shuffle(1:end),:]
-    splitind=Int(round(0.2*n))
+    splitind=Int(round(0.9*n))
     trainingdata=shuffledata[1:splitind,:]
     valdata=shuffledata[splitind+1:end,:]
     datat=CreateDataSet(trainingdata)
     datav=CreateDataSet(valdata)
     return datat,datav
 end
+#Comment: possibly remove some data points with nic value 9 or highter
 
 #Plot Data
 function PlotADSB()
