@@ -16,36 +16,46 @@ using LinearAlgebra
 using KernelFunctions
 using LIBSVM
 using Main.DataProcess
+using Dates
+
+
 
 #Train Kernel
-function TrainKernel(trainingdata)
+function TrainKernel(trainingdata,box)
+
     k=SqExponentialKernel()∘ ScaleTransform(1.5)
     model = svmtrain(kernelmatrix(k, trainingdata.X), trainingdata.Y; kernel=LIBSVM.Kernel.Precomputed)
-    test_range = range(floor(Int, minimum(trainingdata.X)), ceil(Int, maximum(trainingdata.X)); length=100)
-    return model, test_range, k
+	test_range_lat=range(box[3], box[4]; length=100)
+	test_range_lon=range(box[1], box[2]; length=100)
+    x_val = ColVecs(mapreduce(collect, hcat, Iterators.product(test_range_lat, test_range_lon)));
+    y_pred, _ = svmpredict(model, kernelmatrix(k, trainingdata.X, x_val));
+    return test_range_lat, test_range_lon, y_pred
 end
 
-#Validate Kernel
-function ValidateKernel(test_range,trainingdata,valdata,k)
-    x_val = ColVecs(mapreduce(collect, hcat, Iterators.product(test_range, test_range)));
-    y_pred, _ = svmpredict(model, kernelmatrix(k, trainingdata.X, valdata.X));
-    return x_val, y_pred
+#Main Function
+function main()
+    #Import Data
+    filename,rawdata=DataProcess.FileUpload()
+    #Reprocess time to datetime
+    timedata=DataProcess.ReClock(rawdata)
+    timedata=sort!(timedata)
+    delta_t=0:5:1
+    Min=minute.(timedata.mintime)
+    #Split Data By every 5 minutes, each to be trained on
+    # for t=delta_t
+    #     #DataProcess.PlotADSB(test_range_lat,test_range_lon,y_pred,filtereddata)
+    # end
+
+
+    ind=findall(x->0<x<5,Min)
+    filtereddata=timedata[ind,:]
+    datat,datav,box=DataProcess.SplitData(filtereddata)
+    (test_range_lat, test_range_lon, y_pred)=TrainKernel(datat,box)
+    DataProcess.PlotADSB(test_range_lat,test_range_lon,y_pred,datat)
 end
+
+
 
 #Main Script
-#Import Data
-filename,rawdata=DataProcess.FileUpload()
-#Organize and Split into training and validation data, and features/labels
-datat,datav=DataProcess.SplitData(rawdata)
-#Train Model on Training Data
-#model,test_range,k=TrainKernel(datat)
-#Validate Model
-#x_val,y_pred=ValidateKernel(test_range,datat,datav,k)
-
-
-
-
-#Plot Data
-#DataProcess.PlotADSB(datat,datav,model)
-
+main()
 
