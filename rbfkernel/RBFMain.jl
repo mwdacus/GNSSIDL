@@ -45,7 +45,7 @@ function main()
     # for t=delta_t
     #     #DataProcess.PlotADSB(test_range_lat,test_range_lon,y_pred,filtereddata)
     # end
-    ind=findall(x->0<x<5,Min)
+    ind=findall(x->0<x<10,Min)
     filtereddata=timedata[ind,:]
     datat,datav,box=DataProcess.SplitData(filtereddata)
     (test_range_lat, test_range_lon, y_pred)=TrainKernel(datat,box)
