@@ -39,23 +39,32 @@ function main()
     #Reprocess time to datetime
     timedata=DataProcess.ReClock(rawdata)
     timedata=sort!(timedata)
-    delta_t=0:5:1
+    delta_t=0:5:55
     Min=minute.(timedata.mintime)
     #Split Data By every 5 minutes, each to be trained on
-    # for t=delta_t
-    #     #DataProcess.PlotADSB(test_range_lat,test_range_lon,y_pred,filtereddata)
-    # end
-
-
-    ind=findall(x->0<x<5,Min)
-    filtereddata=timedata[ind,:]
-    datat,datav,box=DataProcess.SplitData(filtereddata)
-    (test_range_lat, test_range_lon, y_pred)=TrainKernel(datat,box)
-    DataProcess.PlotADSB(test_range_lat,test_range_lon,y_pred,datat)
+    for t=delta_t
+        ind=findall(x->delta_t<x<delta_t+5,Min)
+        filtereddata=timedata[ind,:]
+        datat,datav,box=DataProcess.SplitData(filtereddata)
+        (test_range_lat, test_range_lon, y_pred)=TrainKernel(datat,box)
+        DataProcess.PlotADSB(test_range_lat,test_range_lon,y_pred,datat,filename,t)
+        #Still need to Validate kernel with datav data
+    end
 end
 
+function testmain()
+    #Import Data
+    filename,rawdata=DataProcess.FileUpload()
+    #Reprocess time to datetime
+    timedata=DataProcess.ReClock(rawdata)
+    timedata=sort!(timedata)
+    Min=minute.(timedata.mintime)
+    #Grab First five minutes of data
+    ind=findall(x->0<x<5,Min)
+    filtereddata=timedata[ind,:]
+    points,box=DataProcess.SplitData(filtereddata)
+    DataProcess.plotpoints(points)
+    return points
+end
 
-
-#Main Script
 main()
-
