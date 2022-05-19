@@ -71,7 +71,7 @@ end
 
 
 #Plot Data
-function PlotADSB(test_range_lat,test_range_lon,y_pred,origin_data,filename,time)
+function PlotADSB(test_range_lat,test_range_lon,y_pred,origin_data)
     ind2=findall(x->x==2,origin_data.Y)
     ind1=findall(x->x==1,origin_data.Y)
     ind0=findall(x->x==0,origin_data.Y)
@@ -83,7 +83,7 @@ function PlotADSB(test_range_lat,test_range_lon,y_pred,origin_data,filename,time
 	    test_range_lon,
 	    test_range_lat,
 	    y_pred;
-	    levels=4,
+	    levels=2,
 	    color=cgrad([:blue,:red,:green]),
 	    alpha=0.2,
 	    colorbar_title="prediction",
