@@ -1,20 +1,24 @@
 
 using PlotlyJS
+using Main.DataProcess
+using DataFrames
+using Dates
 
-function map()
-    geo = attr(scope="usa",
-        projection_type="albers usa",
-        showland=true,
-        landcolor="rgb(217, 217, 217)",
-        subunitwidth=1,
-        countrywidth=1,
-        subunitcolor="rgb(255,255,255)",
-        countrycolor="rgb(255,255,255)")
+function plotgeo(data)
+    plot(data; x=:lat,y=:lon,z=:alt,type="scatter3d",mode="markers",color=:nic)
 
-    trace = scattergeo(;locationmode="USA-states",lat=[34,41],lon=[-104,-105])
-    layout=Layout(;title="GNSS Interference, Denver Area, January 2022",showlegend=false,geo=geo)
-    plot(trace, layout)
 end
-map()
+#Import Data
+filename,rawdata=DataProcess.FileUpload()
+timedata=DataProcess.ReClock(rawdata)
+timedata=sort!(timedata)
+delta_t=0:5:5
+Min=minute.(timedata.mintime)
+#Split Data By every 5 minutes, each to be trained on
+ind=findall(x->10<x<10+10,Min)
+filtereddata=timedata[ind,:]
+plotgeo(filtereddata)
+
+
 
 
