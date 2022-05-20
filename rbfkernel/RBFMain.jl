@@ -23,13 +23,26 @@ using Dates
 #Train Kernel
 function TrainKernel(trainingdata,box)
 
-    k=SqExponentialKernel()∘ ScaleTransform(1.5)
+    k=SqExponentialKernel()∘ ScaleTransform(2)
     model = svmtrain(kernelmatrix(k, trainingdata.X), trainingdata.Y; kernel=LIBSVM.Kernel.Precomputed)
 	test_range_lat=range(box[3], box[4]; length=100)
 	test_range_lon=range(box[1], box[2]; length=100)
-    x_val = ColVecs(mapreduce(collect, hcat, Iterators.product(test_range_lat, test_range_lon)));
-    y_pred, _ = svmpredict(model, kernelmatrix(k, trainingdata.X, x_val));
-    return test_range_lat, test_range_lon, y_pred
+    test_range_alt=range(box[5], box[6]; length=100)
+    x_predict = ColVecs(mapreduce(collect, hcat, Iterators.product(test_range_lat, test_range_lon,test_range_alt)));
+    y_pred, _ = svmpredict(model, kernelmatrix(k, trainingdata.X, x_predict));
+    return test_range_lat, test_range_lon, test_range_alt, y_pred
+end
+
+function ValidateKernel(valdata,model,k,)
+    y_val,_=svmpredict(model,kernelmatrix(k, valdata.X))
+    #Compare Label Values, determine accuracy
+    n=0
+    for i=1:length(y_val)
+        if y_val[i]==valdata.Y[i]
+            n=n+1
+        end
+    end
+    accuracy=n/length(y_val)
 end
 
 #Main Function
@@ -39,17 +52,17 @@ function main()
     #Reprocess time to datetime
     timedata=DataProcess.ReClock(rawdata)
     timedata=sort!(timedata)
-    delta_t=0:5:1
+    delta_t=0:5:5
     Min=minute.(timedata.mintime)
     #Split Data By every 5 minutes, each to be trained on
-    # for t=delta_t
-    #     #DataProcess.PlotADSB(test_range_lat,test_range_lon,y_pred,filtereddata)
-    # end
-    ind=findall(x->0<x<10,Min)
-    filtereddata=timedata[ind,:]
-    datat,datav,box=DataProcess.SplitData(filtereddata)
-    (test_range_lat, test_range_lon, y_pred)=TrainKernel(datat,box)
-    DataProcess.PlotADSB(test_range_lat,test_range_lon,y_pred,datat)
+    for t=delta_t
+        ind=findall(x->t<x<t+10,Min)
+        filtereddata=timedata[ind,:]
+        datat,datav,box=DataProcess.SplitData(filtereddata)
+        (test_range_lat, test_range_lon, test_range_alt,y_pred)=TrainKernel(datat,box)
+        DataProcess.PlotADSB(test_range_lat,test_range_lon,test_range_alt,y_pred,datat,t,filename)
+    end
+
 end
 
 function testmain()

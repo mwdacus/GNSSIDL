@@ -41,7 +41,7 @@ end
 
 #Create Validation Data Set
 function CreateDataSet(data)
-    A=[data.lat data.lon]
+    A=[data.lat data.lon data.alt]
     B=data.nic
     ind2=findall(x->x>5,B)
     ind1=findall(x->3<=x<=5,B)
@@ -65,13 +65,14 @@ function SplitData(rawdata)
     valdata=shuffledata[splitind+1:end,:]
     datat=CreateDataSet(trainingdata)
     datav=CreateDataSet(valdata)
-    box=[minimum(trainingdata.lon),maximum(trainingdata.lon),minimum(trainingdata.lat),maximum(trainingdata.lat)]
+    box=[minimum(trainingdata.lon),maximum(trainingdata.lon),minimum(trainingdata.lat),
+    maximum(trainingdata.lat),minimum(trainingdata.alt),maximum(trainingdata.alt)]
     return datat,datav,box
 end
 
 
 #Plot Data
-function PlotADSB(test_range_lat,test_range_lon,y_pred,origin_data)
+function PlotADSB(test_range_lat,test_range_lon,test_range_alt,y_pred,origin_data,min,filename)
     ind2=findall(x->x==2,origin_data.Y)
     ind1=findall(x->x==1,origin_data.Y)
     ind0=findall(x->x==0,origin_data.Y)
@@ -89,6 +90,8 @@ function PlotADSB(test_range_lat,test_range_lon,y_pred,origin_data)
 	    colorbar_title="prediction",
 	)
     #Save Figure
+    imagename=filename[1:end-4]*"-M"*string(min)*".png"
+    savefig(imagename)
 end
 
 
