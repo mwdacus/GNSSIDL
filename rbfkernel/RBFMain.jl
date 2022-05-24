@@ -8,76 +8,161 @@
     #Resulting Plot of Interference Region based on Kernel Function
 #----------------------------------------------------------------------------------
 
-#CURRENT ISSUE: NEED TO RUN DATA ON GPU (PARALLEL COMPUTING)
 
 using CSV
 using DataFrames
 using LinearAlgebra
 using KernelFunctions
 using LIBSVM
-using Main.DataProcess
 using Dates
+using Statistics
+using Main.DataProcess
+using Main.PlotData
 
 
-
-#Train Kernel
-function TrainKernel(trainingdata,box)
-
-    k=SqExponentialKernel()∘ ScaleTransform(2)
-    model = svmtrain(kernelmatrix(k, trainingdata.X), trainingdata.Y; kernel=LIBSVM.Kernel.Precomputed)
-	test_range_lat=range(box[3], box[4]; length=100)
-	test_range_lon=range(box[1], box[2]; length=100)
-    test_range_alt=range(box[5], box[6]; length=100)
-    x_predict = ColVecs(mapreduce(collect, hcat, Iterators.product(test_range_lat, test_range_lon,test_range_alt)));
-    y_pred, _ = svmpredict(model, kernelmatrix(k, trainingdata.X, x_predict));
-    return test_range_lat, test_range_lon, test_range_alt, y_pred
-end
-
-function ValidateKernel(valdata,model,k,)
-    y_val,_=svmpredict(model,kernelmatrix(k, valdata.X))
-    #Compare Label Values, determine accuracy
-    n=0
-    for i=1:length(y_val)
-        if y_val[i]==valdata.Y[i]
-            n=n+1
+#Validate Kernel
+function ValidateKernel(ŷ,y)
+    n=length(ŷ)
+    num=0
+    for i=1:n
+        if ŷ[i]==y[i] 
+            num=num+1
         end
     end
-    accuracy=n/length(y_val)
+    return num/n
+end
+
+#Train Kernel
+function RunKernel(traindata,valdata,box)
+    k=SqExponentialKernel()∘ ScaleTransform(2.5)
+    model = svmtrain(kernelmatrix(k, traindata.X), traindata.Y; kernel=LIBSVM.Kernel.Precomputed)
+    #Validate Data
+    mval=DataProcess.RowVec2Matrix(valdata)
+    x_val=RowVecs(mval)
+    y_val, _ = svmpredict(model, kernelmatrix(k, traindata.X, x_val))
+    acc=ValidateKernel(valdata.Y,y_val)
+
+    #Create Contours (from Surface to 4000m MSL)
+    test_range_lat=range(box.SE[2], box.NE[2]; length=50)
+	test_range_lon=range(box.NW[1], box.NE[1]; length=50)
+    test_range_alt=range(box.ALT[1],4000; length=25)
+    x_data=mapreduce(collect, hcat, Iterators.product(test_range_lat, test_range_lon, test_range_alt))
+    x_test=ColVecs(x_data);
+    y_test,_=svmpredict(model, kernelmatrix(k,traindata.X, x_test))
+
+    return x_data,y_test
+end
+
+#Create Function to find average lat/lon position among contour plots
+
+#Simple Average NIC Value Algorithm
+function AverageNic(data)
+    adsb_points=DataProcess.RowVec2Matrix(data)
+    indnic0=findall(x->x==0,data.Y)
+    nic0points=adsb_points[indnic0,:]
+    lat=mean(nic0points[:,1])
+    lon=mean(nic0points[:,2])
+    varlat=var(nic0points[:,1])
+    varlon=var(nic0points[:,2])
+    return lat, lon, varlat, varlon
+end
+
+
+#Function that runs through Algorithms Every 5 minutes of very hour
+function KernelTime(timedata)
+    delta_t=0:5:55
+    Min=minute.(timedata.mintime)
+    counter=1
+    acc=Array{Float64}(undef,length(delta_t))
+    center=Array{Float64}(undef,length(delta_t),4)
+    for t=delta_t
+        ind=findall(x->t<x<t+5,Min)
+        filtereddata=timedata[ind,:]
+        rbfdatat,rbfdatav,box=DataProcess.SplitData(filtereddata)
+        #RBF #acc[counter]
+        (acc,center)=RunKernel(rbfdatat,rbfdatav,box)
+        #Average NIC Function
+        (center[counter,1],center[counter,2],center[counter,3],center[counter,4])=AverageNic(rbfdatat)
+        counter=counter+1
+    end
+    Min=minute.(timedata.mintime)
+    ind=findall(x->0<x<5,Min)
+    filtereddata=timedata[ind,:]
+    rbfdatat,rbfdatav,box=DataProcess.SplitData(filtereddata)
+    #RBF 
+    (acc,center)=RunKernel(rbfdatat,rbfdatav,box)
+    return acc,center
+end
+
+#Function that Iterates by Hour
+function KernelHour(rawdata)
+    timedata=DataProcess.ReClock(rawdata)
+    timedata=sort!(timedata)
+    Hour=hour.(timedata.mintime)
+    uniquehours=unique(Hour)
+    n_hours=length(uniquehours)
+    accfull=Vector{Vector{Float64}}(undef,n_hours)
+    centerfull=Vector{Array{Float64}}(undef,n_hours)
+    for i=1:n_hours
+        hourind=findall(x->x==uniquehours[i],Hour)
+        accfull[i],centerfull[i]=KernelTime(timedata[hourind,:])
+        #accful[i],centerfull[i]
+    end
+    return accful,centerfull
+    #accful,centerfull
 end
 
 #Main Function
 function main()
-    #Import Data
     filename,rawdata=DataProcess.FileUpload()
-    #Reprocess time to datetime
-    timedata=DataProcess.ReClock(rawdata)
-    timedata=sort!(timedata)
-    delta_t=0:5:5
-    Min=minute.(timedata.mintime)
-    #Split Data By every 5 minutes, each to be trained on
-    for t=delta_t
-        ind=findall(x->t<x<t+10,Min)
-        filtereddata=timedata[ind,:]
-        datat,datav,box=DataProcess.SplitData(filtereddata)
-        (test_range_lat, test_range_lon, test_range_alt,y_pred)=TrainKernel(datat,box)
-        DataProcess.PlotADSB(test_range_lat,test_range_lon,test_range_alt,y_pred,datat,t,filename)
-    end
+    accfull,accfull=KernelHour(rawdata)
+    PlotData.PlotValAccuracy(accfull)
+    PlotData.PlotAverage(centerfull)  
+end
 
+
+#Test Functions
+function testKernelTime(timedata)
+    Min=minute.(timedata.mintime)
+    ind=findall(x->0<x<30,Min)
+    filtereddata=timedata[ind,:]
+    rbfdatat,rbfdatav,box=DataProcess.SplitData(filtereddata)
+    #RBF 
+    (x_test,y_test)=RunKernel(rbfdatat,rbfdatav,box)
+    return x_test, y_test,box
 end
 
 function testmain()
-    #Import Data
     filename,rawdata=DataProcess.FileUpload()
-    #Reprocess time to datetime
     timedata=DataProcess.ReClock(rawdata)
     timedata=sort!(timedata)
-    Min=minute.(timedata.mintime)
-    #Grab First five minutes of data
-    ind=findall(x->0<x<5,Min)
-    filtereddata=timedata[ind,:]
-    points,box=DataProcess.SplitData(filtereddata)
-    DataProcess.plotpoints(points)
-    return points
+    x_test,y_test,box=testKernelTime(timedata)
+    x=transpose(x_test)
+
+    #Filter altitude with nic of 0 included
+    nic0=findall(x->x==0,y_test)
+    newx=x[nic0,:]
+    altunq=unique(newx[:,3])
+
+    altind=[findall(x->x==altunq[i],x[:,3]) for i=1:length(altunq)]
+    altind=vec(mapreduce(permutedims,hcat,altind))
+    finalx=x[altind,:]
+    finaly=y_test[altind]
+
+    #Find Average of all planes
+    planary=reshape(finaly,(50,50,length(altunq)))
+    oneyd=reshape(mean(planary,dims=3),(50,50))
+    oney=vec(reshape(mean(planary,dims=3),(1,2500)))
+
+    grid=transpose(mapreduce(collect,hcat,Iterators.product(unique(finalx[:,2]),unique(finalx[:,1]))))
+    
+
+
+
+    #PlotData.PlotContour(unique(x[:,2]), unique(x[:,1]),oneyd,box)
+    PlotData.PlotMap(grid,oney,box)
+    #return unique(x[:,2]), unique(x[:,1]),oney,box
 end
 
-main()
+#Main Script
+testmain()

@@ -25,10 +25,17 @@ struct Data
     Y::Vector{Float64}                                          #Labels
 end
 
+struct FlightBox
+    NW::Vector{Float64}
+    NE::Vector{Float64}
+    SE::Vector{Float64}
+    SW::Vector{Float64}
+    ALT::Vector{Float64}
+end
 
 #Import Data
 function FileUpload()
-    filename=open_dialog("Upload ADS-B File")
+    filename=open_dialog("Upload ADS-B Files",select_multiple=true)
     rawdata=DataFrame(CSV.File(filename))
     return filename,rawdata
 end
@@ -44,8 +51,8 @@ function CreateDataSet(data)
     A=[data.lat data.lon data.alt]
     B=data.nic
     ind2=findall(x->x>5,B)
-    ind1=findall(x->3<=x<=5,B)
-    ind0=findall(x->x<3,B)
+    ind1=findall(x->3<x<=5,B)
+    ind0=findall(x->x<=3,B)
     B[ind2].=2
     B[ind1].=1
     B[ind0].=0
@@ -56,18 +63,30 @@ end
 function SplitData(rawdata)
     indnic=findall(x->x<=7,rawdata.nic)
     data_nic=rawdata[indnic,:]
-    indalt=findall(x->x<10000,data_nic.alt)
+    indalt=findall(x->x<7000,data_nic.alt)
     data_nic=data_nic[indalt,:]
     n=size(data_nic,1)
     shuffledata=data_nic[shuffle(1:end),:]
     splitind=Int(round(0.9*n))
     trainingdata=shuffledata[1:splitind,:]
     valdata=shuffledata[splitind+1:end,:]
-    datat=CreateDataSet(trainingdata)
-    datav=CreateDataSet(valdata)
-    box=[minimum(trainingdata.lon),maximum(trainingdata.lon),minimum(trainingdata.lat),
-    maximum(trainingdata.lat),minimum(trainingdata.alt),maximum(trainingdata.alt)]
-    return datat,datav,box
+    rbfdatat=CreateDataSet(trainingdata)
+    rbfdatav=CreateDataSet(valdata)
+
+    box=FlightBox(
+        [minimum(shuffledata.lon),maximum(shuffledata.lat)],
+        [maximum(shuffledata.lon),maximum(shuffledata.lat)],
+        [maximum(shuffledata.lon),minimum(shuffledata.lat)],
+        [minimum(shuffledata.lon),minimum(shuffledata.lat)],
+        [minimum(shuffledata.alt),maximum(shuffledata.alt)])
+
+    return rbfdatat,rbfdatav,box
+end
+
+#Convert Data from RowVecs{} to Matrix
+function RowVec2Matrix(data)
+    matform=mapreduce(permutedims,vcat,[data.X[i][:] for i in 1:size(data.X,1)])
+    return matform
 end
 
 
@@ -96,35 +115,6 @@ end
 
 
 
-#Old Functions
-#Function for map information 
-function plotpoints(data)
-    nic=data[2]
-    loc=data[1]
-    ind2=findall(x->x==2,nic)
-    ind1=findall(x->x==1,nic)
-    ind0=findall(x->x==0,nic)
-    t1=scatter(; x=loc[ind0,2], y=loc[ind0,1], mode="markers",color=:red, name="NIC [0 3]")
-    t2=scatter(; x=loc[ind1,2], y=loc[ind1,1], mode="markers",color=:blue, name="NIC [4 6]")
-    t3=scatter(; x=loc[ind2,2], y=loc[ind2,1], mode="markers",color=:green, name="NIC (7 or higher)")
-    plot([t1,t2,t3])
-
-end
-#Create Data Set
-function CreateDataSet1(data)
-    A=[data.lat data.lon]
-    B=data.nic
-    ind2=findall(x->x>5,B)
-    ind1=findall(x->4<x<=7,B)
-    ind0=findall(x->0<=x<4,B)
-    #B[ind2].=2
-    B[ind1].=1
-    B[ind0].=0
-    return (A,B)
-end
-
-end
-
 #PlotlyJs script (still need to determine how to get )
 
     # t1=scatter(; x=adsb_points[ind0,2], y=adsb_points[ind0,1], mode="markers",color=:red, name="NIC [0 3]")
@@ -134,3 +124,5 @@ end
     # trace=contour(x=test_range_lon,y=test_range_lat,z=y_pred,colorscale="Hot",contours_start=0,contours_end=1)
 
     # plot([t1,t2,t3,trace])
+
+end
