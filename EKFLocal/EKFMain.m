@@ -107,6 +107,8 @@ function altplot(time,adsbdata,gpsdata,ekf)
     plot(time,ekf(:,3),'ob','MarkerSize',4)
     grid on
     legend('ADSB','GPS','EKF')
+    xlabel('Time (UTC)')
+    ylabel('Altitude (MSL) [m]')
 end
 
 
