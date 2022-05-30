@@ -43,14 +43,14 @@ function plotmain()
     timedata=sort!(timedata)
     Min=minute.(timedata.mintime)
     #Split Data By every 5 minutes, each to be trained on
-    ind=findall(x->0<x<10,Min)
+    ind=findall(x->0<x<15,Min)
     filtereddata=timedata[ind,:]
-    indalt=findall(x->x<2000,filtereddata.alt)
+    indalt=findall(x->x<5000,filtereddata.alt)
     filtereddata=filtereddata[indalt,:]
-    indnic=findall(x->x<=7,filtereddata.nic)
+    indnic=findall(x->x<=6,filtereddata.nic)
     filtereddata=filtereddata[indnic,:]
     box=[maximum(filtereddata.lat), minimum(filtereddata.lat),maximum(filtereddata.lon),minimum(filtereddata.lon)]
-    plot3d(filtereddata)
+    plotgeo(filtereddata,box)
 end
 
 function mapboxtest()
@@ -71,12 +71,5 @@ function mapboxtest()
     return x,y,z
 end
 
-
-x,y,z=mapboxtest()
-
-oney=vec(reshape(mean(planary,dims=3),(1,2500)))
-
-grid=transpose(mapreduce(collect,hcat,Iterators.product(unique(finalx[:,2]),unique(finalx[:,1]))))
-
-
+plotmain()
 

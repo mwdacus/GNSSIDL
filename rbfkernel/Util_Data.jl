@@ -63,7 +63,7 @@ end
 function SplitData(rawdata)
     indnic=findall(x->x<=7,rawdata.nic)
     data_nic=rawdata[indnic,:]
-    indalt=findall(x->x<7000,data_nic.alt)
+    indalt=findall(x->x<5000,data_nic.alt)
     data_nic=data_nic[indalt,:]
     n=size(data_nic,1)
     shuffledata=data_nic[shuffle(1:end),:]
@@ -104,7 +104,7 @@ function PlotADSB(test_range_lat,test_range_lon,test_range_alt,y_pred,origin_dat
 	    test_range_lat,
 	    y_pred;
 	    levels=2,
-	    color=cgrad([:blue,:red,:green]),
+	    color=cgrad([:green,:red,:blue]),
 	    alpha=0.2,
 	    colorbar_title="prediction",
 	)

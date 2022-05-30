@@ -34,7 +34,7 @@ end
 
 #Train Kernel
 function RunKernel(traindata,valdata,box)
-    k=SqExponentialKernel()∘ ScaleTransform(2.5)
+    k=SqExponentialKernel()∘ ScaleTransform(10)
     model = svmtrain(kernelmatrix(k, traindata.X), traindata.Y; kernel=LIBSVM.Kernel.Precomputed)
     #Validate Data
     mval=DataProcess.RowVec2Matrix(valdata)
@@ -45,7 +45,7 @@ function RunKernel(traindata,valdata,box)
     #Create Contours (from Surface to 4000m MSL)
     test_range_lat=range(box.SE[2], box.NE[2]; length=50)
 	test_range_lon=range(box.NW[1], box.NE[1]; length=50)
-    test_range_alt=range(box.ALT[1],4000; length=25)
+    test_range_alt=range(box.ALT[1],box.ALT[2]; length=25)
     x_data=mapreduce(collect, hcat, Iterators.product(test_range_lat, test_range_lon, test_range_alt))
     x_test=ColVecs(x_data);
     y_test,_=svmpredict(model, kernelmatrix(k,traindata.X, x_test))
@@ -124,44 +124,47 @@ end
 #Test Functions
 function testKernelTime(timedata)
     Min=minute.(timedata.mintime)
-    ind=findall(x->0<x<30,Min)
+    ind=findall(x->0<x<15,Min)
     filtereddata=timedata[ind,:]
     rbfdatat,rbfdatav,box=DataProcess.SplitData(filtereddata)
     #RBF 
     (x_test,y_test)=RunKernel(rbfdatat,rbfdatav,box)
-    return x_test, y_test,box
+    return x_test, y_test,box,rbfdatat
 end
 
 function testmain()
     filename,rawdata=DataProcess.FileUpload()
     timedata=DataProcess.ReClock(rawdata)
     timedata=sort!(timedata)
-    x_test,y_test,box=testKernelTime(timedata)
+    x_test,y_test,box,rbfdatat=testKernelTime(timedata)
     x=transpose(x_test)
 
+    x_train=DataProcess.RowVec2Matrix(rbfdatat)
+    PlotData.PlotContour(x,y_test,x_train,rbfdatat.Y)
     #Filter altitude with nic of 0 included
-    nic0=findall(x->x==0,y_test)
-    newx=x[nic0,:]
-    altunq=unique(newx[:,3])
+    # nic0=findall(x->x==0,y_test)
+    # newx=x[nic0,:]
+    # altunq=unique(newx[:,3])
 
-    altind=[findall(x->x==altunq[i],x[:,3]) for i=1:length(altunq)]
-    altind=vec(mapreduce(permutedims,hcat,altind))
-    finalx=x[altind,:]
-    finaly=y_test[altind]
+    # altind=[findall(x->x==altunq[i],x[:,3]) for i=1:length(altunq)]
+    # altind=vec(mapreduce(permutedims,hcat,altind))
+    # finalx=x[altind,:]
+    # finaly=y_test[altind]
+    # #lotData.PlotContour(finalx,finaly)
+    # #Find Average of all planes
+    # planary=reshape(finaly,(50,50,length(altunq)))
+    # oneyd=reshape(mean(planary,dims=3),(50,50))
+    # oney=vec(reshape(mean(planary,dims=3),(1,2500)))
 
-    #Find Average of all planes
-    planary=reshape(finaly,(50,50,length(altunq)))
-    oneyd=reshape(mean(planary,dims=3),(50,50))
-    oney=vec(reshape(mean(planary,dims=3),(1,2500)))
-
-    grid=transpose(mapreduce(collect,hcat,Iterators.product(unique(finalx[:,2]),unique(finalx[:,1]))))
+    # grid=transpose(mapreduce(collect,hcat,Iterators.product(unique(finalx[:,2]),unique(finalx[:,1]))))
     
 
 
 
-    #PlotData.PlotContour(unique(x[:,2]), unique(x[:,1]),oneyd,box)
-    PlotData.PlotMap(grid,oney,box)
-    #return unique(x[:,2]), unique(x[:,1]),oney,box
+    # #PlotData.PlotContour(unique(x[:,2]), unique(x[:,1]),oneyd,box)
+    # PlotData.oldcontour(unique(finalx[:,2]),finalx[:,1],oney)
+    # #return unique(x[:,2]), unique(x[:,1]),oney,box
+    #return x,y_test,x_train,rbfdatat.Y
 end
 
 #Main Script
