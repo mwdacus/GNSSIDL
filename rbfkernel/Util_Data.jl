@@ -18,18 +18,16 @@ using Random
 using Gtk
 using Dates
 using Plots
+using Geodesy
 
 struct Data
-    X::RowVecs{Float64, Matrix{Float64}, SubArray{Float64, 1, Matrix{Float64}, 
-    Tuple{Int64, Base.Slice{Base.OneTo{Int64}}}, true}}         #Features
+    X::Matrix{Float64}        #Features
     Y::Vector{Float64}                                          #Labels
 end
 
 struct FlightBox
-    NW::Vector{Float64}
-    NE::Vector{Float64}
-    SE::Vector{Float64}
-    SW::Vector{Float64}
+    X::Vector{Float64}
+    Y::Vector{Float64}
     ALT::Vector{Float64}
 end
 
@@ -40,6 +38,31 @@ function FileUpload()
     return filename,rawdata
 end
 
+#Convert to enu DataFrame
+function ENUConvert(table::DataFrame)
+    nsamples=size(table,1)
+    points_LLA=[LLA(table.lat[i],table.lon[i],table.alt[i]) for i in 1:nsamples]
+    origin=LLA(39.861667,-104.6731667,1656.2)
+    trans=ENUfromLLA(origin,wgs84)
+    new_points=map(trans,points_LLA)
+    enudata=[[new_points[i][1], new_points[i][2], new_points[i][3]] for i in 
+        1:length(new_points)]
+    finalenu=reshape(mapreduce(permutedims,vcat,enudata),(length(new_points),3))
+    return finalenu
+end
+
+#Convert to LLA DataFrame
+function LLAConvert(data::Matrix)
+    nsamples=size(data,2)
+    enudata=[[ENU(data[1,i],data[2,i],data[3,i])] for i in 1:nsamples]
+    origin=LLA(39.861667,-104.6731667,1656.2)
+    trans=LLAfromENU(origin,wgs84)
+    lladata=[[map(trans,enudata[i])[1].lat, map(trans,enudata[i])[1].lon,
+        map(trans,enudata[i])[1].alt] for i in 1:nsamples]
+    finallla=reshape(mapreduce(permutedims,vcat,lladata),(nsamples,3))
+    return transpose(finallla)
+end
+
 #Reprocess DateTime from String to DateTime
 function ReClock(data)
     data.mintime=DateTime.(data.mintime, "yyyy-mm-dd HH:MM:SS.sss")
@@ -48,39 +71,36 @@ end
 
 #Create Validation Data Set
 function CreateDataSet(data)
-    A=[data.lat data.lon data.alt]
+    A=[data.x data.y data.z]
     B=data.nic
-    ind2=findall(x->x>5,B)
-    ind1=findall(x->3<x<=5,B)
-    ind0=findall(x->x<=3,B)
-    B[ind2].=2
+    ind2=findall(x->x>=5,B)
+    ind1=findall(x->2<=x<=4,B)
+    ind0=findall(x->x<=1,B)
+    B[ind2].=0
     B[ind1].=1
-    B[ind0].=0
-    return Data(RowVecs(A),B)
+    B[ind0].=2
+    return Data(transpose(A),B)
 end
 
 #Split Data
 function SplitData(rawdata)
-    indnic=findall(x->x<=7,rawdata.nic)
+    indnic=findall(x->x<=6,rawdata.nic)
     data_nic=rawdata[indnic,:]
     indalt=findall(x->x<5000,data_nic.alt)
     data_nic=data_nic[indalt,:]
     n=size(data_nic,1)
-    shuffledata=data_nic[shuffle(1:end),:]
-    splitind=Int(round(0.9*n))
-    trainingdata=shuffledata[1:splitind,:]
-    valdata=shuffledata[splitind+1:end,:]
-    rbfdatat=CreateDataSet(trainingdata)
-    rbfdatav=CreateDataSet(valdata)
-
+    trainind=Int.(round.(collect(range(1,n,length=500))))
+    a=collect(1:n) .∈ [trainind]
+    valind=findall(x->x==0,a)
+    trainingdata=data_nic[trainind,:]
+    valdata=data_nic[valind,:]
+    kdatat=CreateDataSet(trainingdata)
+    kdatav=CreateDataSet(valdata)
     box=FlightBox(
-        [minimum(shuffledata.lon),maximum(shuffledata.lat)],
-        [maximum(shuffledata.lon),maximum(shuffledata.lat)],
-        [maximum(shuffledata.lon),minimum(shuffledata.lat)],
-        [minimum(shuffledata.lon),minimum(shuffledata.lat)],
-        [minimum(shuffledata.alt),maximum(shuffledata.alt)])
-
-    return rbfdatat,rbfdatav,box
+        [minimum(data_nic.x),maximum(data_nic.x)],
+        [minimum(data_nic.y),maximum(data_nic.y)],
+        [minimum(data_nic.z),maximum(data_nic.z)])
+    return kdatat,kdatav,box
 end
 
 #Convert Data from RowVecs{} to Matrix
@@ -88,41 +108,5 @@ function RowVec2Matrix(data)
     matform=mapreduce(permutedims,vcat,[data.X[i][:] for i in 1:size(data.X,1)])
     return matform
 end
-
-
-#Plot Data
-function PlotADSB(test_range_lat,test_range_lon,test_range_alt,y_pred,origin_data,min,filename)
-    ind2=findall(x->x==2,origin_data.Y)
-    ind1=findall(x->x==1,origin_data.Y)
-    ind0=findall(x->x==0,origin_data.Y)
-    adsb_points=mapreduce(permutedims,vcat,[origin_data.X[i][:] for i in 1:size(origin_data.X,1)])
-    scatter(adsb_points[ind0,2],adsb_points[ind0,1],color=:blue)
-    scatter!(adsb_points[ind1,2],adsb_points[ind1,1],color=:red)
-    scatter!(adsb_points[ind2,2],adsb_points[ind2,1],color=:green)
-    contourf!(
-	    test_range_lon,
-	    test_range_lat,
-	    y_pred;
-	    levels=2,
-	    color=cgrad([:green,:red,:blue]),
-	    alpha=0.2,
-	    colorbar_title="prediction",
-	)
-    #Save Figure
-    imagename=filename[1:end-4]*"-M"*string(min)*".png"
-    savefig(imagename)
-end
-
-
-
-#PlotlyJs script (still need to determine how to get )
-
-    # t1=scatter(; x=adsb_points[ind0,2], y=adsb_points[ind0,1], mode="markers",color=:red, name="NIC [0 3]")
-    # t2=scatter(; x=adsb_points[ind1,2], y=adsb_points[ind1,1], mode="markers",color=:blue,name="NIC [4 6]")
-    # t3=scatter(; x=adsb_points[ind2,2], y=adsb_points[ind2,1], mode="markers",color=:green, name="NIC (7 or higher)")
-    
-    # trace=contour(x=test_range_lon,y=test_range_lat,z=y_pred,colorscale="Hot",contours_start=0,contours_end=1)
-
-    # plot([t1,t2,t3,trace])
 
 end

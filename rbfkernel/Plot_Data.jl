@@ -49,20 +49,22 @@ end
 
 #Plot Contour Plots
 function PlotContour(x_kernel,y_kernel,x_data,y_data)
-    t1=scatter3d(x=x_kernel[:,2],y=x_kernel[:,1],z=x_kernel[:,3],mode="markers",
+    t1=scatter3d(x=x_kernel[1,:],y=x_kernel[2,:],z=x_kernel[3,:],mode="markers",
         marker=attr(color=y_kernel),
         hovertext=y_kernel,
         opacity=0.2)
-    t2=scatter3d(;x=x_data[:,2],y=x_data[:,1],z=x_data[:,3],mode="markers",
+    t2=scatter3d(x=x_data[1,:],y=x_data[2,:],z=x_data[3,:],mode="markers",
         marker=attr(color=y_data),
         hovertext=y_data)
-
-    plot([t1, t2])
-
-
-
+    # trace=contour(x=unique(x_kernel[2,:]),y=unique(x_kernel[1,:]),z=z,        
+    #     colorscale="Electric",
+    #     contours_start=-2,
+    #     contours_end=2,
+    #     contours_size=.5)
+    plot([t1,t2])
 end
 
+#Function that uses plots.jl to plot contour
 function oldcontour(x,y,y_pred)
     test_range_lon=unique(y)
     test_range_lat=unique(x)
@@ -78,21 +80,45 @@ function oldcontour(x,y,y_pred)
 
 end
 
-function PlotMap(x,z,box)
-    mapbox=attr(style="open-street-map",
-    center=attr(lat=(box.NE[2]+box.SE[2])/2,lon=(box.NE[1]+box.NW[1])/2),   
-        zoom=7    
-        )
-    data=densitymapbox(; lat=x[:,2],lon=x[:,1],z=z,
+#2d geo map
+function plotgeo(data,y)
+    marker=attr(color=y,
+        size=5,
+        cmin=0,
+        cmax=2,
+        colorbar=attr(title="NIC value"),
+            )
+    mapbox=attr(style="open-street-map")
+  
+    data=scattermapbox(lat=data[1,:],lon=data[2,:],
+        mode="markers",
+        marker=marker,
+        text=y)
+    layout=Layout(; title="GPS Interference Event, Denver Area, January 2022",
+    mapbox=mapbox)
+
+    plot(data,layout)
+end
+
+#Function that plots heatmap of nic values
+function PlotMap(x,z)
+    mapbox=attr(style="open-street-map")
+    # center=attr(lat=(box.NE[2]+box.SE[2])/2,lon=(box.NE[1]+box.NW[1])/2),   
+    #     zoom=7    
+    #     )
+    data=densitymapbox(; lat=x[1,:],lon=x[2,:],z=z,
         opacity=0.7,
         showscale=true,
         zmin=0,
         zmax=2,
-        radius=50)
+        reversescale=true,
+        radius=20)
     layout=Layout(; title="GPS Interference Event, Denver Area, January 2022",
     mapbox=mapbox)
     plot(data,layout)
 
+    # imagename="test.png"
+    # savefig(imagename)
 
 
 end

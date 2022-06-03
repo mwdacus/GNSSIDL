@@ -63,7 +63,7 @@ function mapboxtest()
             1    2       1     1       0
             0        0      0        0      0
         ]',
-        colorscale="Hot",
+        colorscale="Electric",
         contours_start=0,
         contours_end=2,
         contours_size=1
