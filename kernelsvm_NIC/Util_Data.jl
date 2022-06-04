@@ -74,8 +74,8 @@ function CreateDataSet(data)
     A=[data.x data.y data.z]
     B=data.nic
     ind2=findall(x->x>=5,B)
-    ind1=findall(x->2<=x<=4,B)
-    ind0=findall(x->x<=1,B)
+    ind1=findall(x->3<=x<=4,B)
+    ind0=findall(x->x<=2,B)
     B[ind2].=0
     B[ind1].=1
     B[ind0].=2
@@ -84,12 +84,12 @@ end
 
 #Split Data
 function SplitData(rawdata)
-    indnic=findall(x->x<=6,rawdata.nic)
+    indnic=findall(x->x<=7,rawdata.nic)
     data_nic=rawdata[indnic,:]
     indalt=findall(x->x<5000,data_nic.alt)
     data_nic=data_nic[indalt,:]
     n=size(data_nic,1)
-    trainind=Int.(round.(collect(range(1,n,length=500))))
+    trainind=Int.(round.(collect(range(1,n,length=5000))))
     a=collect(1:n) .∈ [trainind]
     valind=findall(x->x==0,a)
     trainingdata=data_nic[trainind,:]
@@ -97,9 +97,9 @@ function SplitData(rawdata)
     kdatat=CreateDataSet(trainingdata)
     kdatav=CreateDataSet(valdata)
     box=FlightBox(
-        [minimum(data_nic.x),maximum(data_nic.x)],
-        [minimum(data_nic.y),maximum(data_nic.y)],
-        [minimum(data_nic.z),maximum(data_nic.z)])
+        [minimum(trainingdata.x),maximum(trainingdata.x)],
+        [minimum(trainingdata.y),maximum(trainingdata.y)],
+        [minimum(trainingdata.z),maximum(trainingdata.z)])
     return kdatat,kdatav,box
 end
 

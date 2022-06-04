@@ -23,32 +23,43 @@ include("Util_Data.jl")
 include("Plot_Data.jl")
 
 #Validate Kernel
-function ValidateKernel(model,valdata)
-    ŷ, _ = svmpredict(model, valdata.X)
-    n=length(ŷ)
-    num=0
-    for i=1:n
-        if ŷ[i]==valdata.Y[i] 
-            num=num+1
+function ValidateKernel(k,model,traindata,valdata)
+    numval=50
+    acc=Array{Float64}(undef,numval)
+    for i=1:numval
+        n=size(valdata.X,2)
+            randsampind=rand(1:n,100)
+            randsampx=valdata.X[:,randsampind]
+            randsampy=valdata.Y[randsampind]
+        
+        ŷ, _ = svmpredict(model, kernelmatrix(k,ColVecs(traindata.X),ColVecs(randsampx)))
+        n=length(ŷ)
+        num=0
+        for i=1:n
+            if ŷ[i]==randsampy[i] 
+                num=num+1
+            end
         end
+        acc[i]=num/n
     end
-    return num/n
+    return acc
 end
 
 #Train Kernel
-function RunKernel(traindata,box)
+function RunKernel(traindata,valdata,box)
+    k=SqExponentialKernel()∘ScaleTransform(0.001)
     #Train Model
-    model = svmtrain(traindata.X, traindata.Y; svmtype=SVC,
-        kernel=LIBSVM.Kernel.Polynomial,degree=3,coef0=0.25,gamma=1/4)
-        #,degree=4,coef0=.25,gamma=1/4)
+    model = svmtrain(kernelmatrix(k, ColVecs(traindata.X)), traindata.Y; kernel=LIBSVM.Kernel.Precomputed)
     #Plot Model (Meshgrid)
     test_range_x=range(box.X[1], box.X[2]; length=100)
 	test_range_y=range(box.Y[1], box.Y[2]; length=100)
     test_range_alt=range(box.ALT[1],box.ALT[2]; length=25)
     x_test=mapreduce(collect, hcat, Iterators.product(test_range_x, 
         test_range_y,test_range_alt))
-    y_test,_=svmpredict(model, x_test)
-    return model,x_test,y_test
+    y_test,_=svmpredict(model, kernelmatrix(k,ColVecs(traindata.X), ColVecs(x_test)))
+    #Validate Kernel
+    acc=ValidateKernel(k,model,traindata,valdata)
+    return acc,x_test,y_test
 end
 
 #Function that finds label averages among all planes
@@ -97,18 +108,20 @@ function main()
     timedata.z=ecefdata[:,3]
     kdatat,kdatav,box=DataProcess.SplitData(timedata)
     #Plot Data
+    
     # newx=DataProcess.LLAConvert(kdatat.X)
     # PlotData.plotgeo(newx,kdatat.Y)
     #Train Kernel
-    model,x_test,y_test=RunKernel(kdatat,box)
+    acc,x_test,y_test=RunKernel(kdatat,kdatav,box)
+    #PlotData.PlotContour(kdatat.X,kdatat.Y,x_test,y_test)
     #Determine Validation Accuracy
-    #accfull=ValidateKernel(model,kdatav)
+
     #Plot Area of Interference
-    newy=MargAlt(x_test,y_test)
-    newx=DataProcess.LLAConvert(x_test)
-    PlotData.PlotMap(newx,newy)
+    #newy=MargAlt(x_test,y_test)
+    #newx=DataProcess.LLAConvert(x_test)
+    #PlotData.PlotMap(newx,newy)
     #Plot Validation Accuracy
-    # PlotData.PlotValAccuracy(accfull)
+    PlotData.PlotValAccuracy(acc)
 end
 
 #Main Script

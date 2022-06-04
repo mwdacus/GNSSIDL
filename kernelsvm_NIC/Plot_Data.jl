@@ -17,9 +17,9 @@ using Statistics
 #Plot Accuracy
 function PlotValAccuracy(accdata)
     valdata=reduce(vcat,accdata)
-    trace=scatter(;x=0:length(valdata),y=valdata,mode="markers")
+    trace=bar(;x=0:length(valdata),y=valdata)
     layout=Layout(;title="Validation Accuracy of ADS-B Data",
-        xaxis=attr(title="Time Step Interval",showgrid=true),
+        xaxis=attr(title="Validation Subset Number",showgrid=true),
         yaxis=attr(title="Validation Accuracy",showgrid=true)
         )
     plot(trace,layout)
@@ -54,13 +54,9 @@ function PlotContour(x_kernel,y_kernel,x_data,y_data)
         hovertext=y_kernel,
         opacity=0.2)
     t2=scatter3d(x=x_data[1,:],y=x_data[2,:],z=x_data[3,:],mode="markers",
-        marker=attr(color=y_data),
-        hovertext=y_data)
-    # trace=contour(x=unique(x_kernel[2,:]),y=unique(x_kernel[1,:]),z=z,        
-    #     colorscale="Electric",
-    #     contours_start=-2,
-    #     contours_end=2,
-    #     contours_size=.5)
+      marker=attr(color=y_data),
+      hovertext=y_data,
+      opacity=0.2)
     plot([t1,t2])
 end
 
@@ -111,7 +107,7 @@ function PlotMap(x,z)
         showscale=true,
         zmin=0,
         zmax=2,
-        reversescale=true,
+        reversescale=false,
         radius=20)
     layout=Layout(; title="GPS Interference Event, Denver Area, January 2022",
     mapbox=mapbox)
