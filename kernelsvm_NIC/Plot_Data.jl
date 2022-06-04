@@ -20,7 +20,8 @@ function PlotValAccuracy(accdata)
     trace=bar(;x=0:length(valdata),y=valdata)
     layout=Layout(;title="Validation Accuracy of ADS-B Data",
         xaxis=attr(title="Validation Subset Number",showgrid=true),
-        yaxis=attr(title="Validation Accuracy",showgrid=true)
+        yaxis=attr(title="Validation Accuracy",showgrid=true),
+        font=attr(family="Times New Roman",size=20,color="Black")
         )
     config=PlotConfig(displayModeBar=true,
         toImageButtonOptions=attr(format="png",filename="RBF",height=700,width=1000,scale=1).fields)
@@ -99,7 +100,7 @@ function plotgeo(data,y)
     layout=Layout(; title="GPS Interference Event, Denver Area, January 2022",
         mapbox=mapbox)
     config=PlotConfig(displayModeBar=true,
-        toImageButtonOptions=attr(format="png",filename="RBF",height=700,width=1000,scale=1).fields)
+        toImageButtonOptions=attr(format="png",filename="RBF",height=1500,width=1500,scale=1).fields)
     p=plot(data,layout,config=config)
     display(p)
 end
@@ -115,12 +116,16 @@ function PlotMap(x,z)
             zmin=0,
             zmax=2,
             reversescale=false,
-            radius=20)
+            radius=20,
+            title=attr(text="Label Value",font=attr(color="Black",family="Times New Roman",size=20)),
+            tickfont=attr(color="Black",family="Times New Roman",size=35)
+            )
     layout=Layout(; title="GPS Interference Event, Denver Area, January 2022",
+            font=attr(family="Times New Roman",size=24,color="Black"),
             mapbox=mapbox)
 
     config=PlotConfig(displayModeBar=true,
-            toImageButtonOptions=attr(format="png",filename="RBF",height=700,width=1000,scale=1).fields)
+            toImageButtonOptions=attr(format="png",filename="RBF",height=1500,width=1500,scale=1).fields)
     
     p=plot(data,layout,config=config)
     display(p)

@@ -110,7 +110,7 @@ function main()
     #Plot Data
     # newx=DataProcess.LLAConvert(kdatat.X)
     # PlotData.plotgeo(newx,kdatat.Y)
-    # #Train Kernel
+    #Train Kernel
     acc,x_test,y_test=RunKernel(kdatat,kdatav,box)
     # #Plot Area of Interference
     newy=MargAlt(x_test,y_test)
