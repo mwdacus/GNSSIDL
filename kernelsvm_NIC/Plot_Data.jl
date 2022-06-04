@@ -22,7 +22,10 @@ function PlotValAccuracy(accdata)
         xaxis=attr(title="Validation Subset Number",showgrid=true),
         yaxis=attr(title="Validation Accuracy",showgrid=true)
         )
-    plot(trace,layout)
+    config=PlotConfig(displayModeBar=true,
+        toImageButtonOptions=attr(format="png",filename="RBF",height=700,width=1000,scale=1).fields)
+    p=plot(trace,layout,config=config)
+    display(p)
 end
 
 #Plot Average NIC 0 Distance Algorithm
@@ -82,41 +85,48 @@ function plotgeo(data,y)
         size=5,
         cmin=0,
         cmax=2,
-        colorbar=attr(title="NIC value"),
+        colorbar=attr(title="NIC value")
             )
-    mapbox=attr(style="open-street-map")
-  
+    mapbox=attr(style="open-street-map",
+        center=attr(lat=39.861667,lon=-104.6731667),
+        zoom=8
+        )
+    #minor=attr(griddash="dot",nticks=10,showgrid=true,tickmode="auto"))
     data=scattermapbox(lat=data[1,:],lon=data[2,:],
         mode="markers",
         marker=marker,
         text=y)
     layout=Layout(; title="GPS Interference Event, Denver Area, January 2022",
-    mapbox=mapbox)
-
-    plot(data,layout)
+        mapbox=mapbox)
+    config=PlotConfig(displayModeBar=true,
+        toImageButtonOptions=attr(format="png",filename="RBF",height=700,width=1000,scale=1).fields)
+    p=plot(data,layout,config=config)
+    display(p)
 end
 
 #Function that plots heatmap of nic values
 function PlotMap(x,z)
-    mapbox=attr(style="open-street-map")
-    # center=attr(lat=(box.NE[2]+box.SE[2])/2,lon=(box.NE[1]+box.NW[1])/2),   
-    #     zoom=7    
-    #     )
+    mapbox=attr(style="open-street-map",
+            center=attr(lat=39.861667,lon=-104.6731667),
+            zoom=8)
     data=densitymapbox(; lat=x[1,:],lon=x[2,:],z=z,
-        opacity=0.7,
-        showscale=true,
-        zmin=0,
-        zmax=2,
-        reversescale=false,
-        radius=20)
+            opacity=0.7,
+            showscale=true,
+            zmin=0,
+            zmax=2,
+            reversescale=false,
+            radius=20)
     layout=Layout(; title="GPS Interference Event, Denver Area, January 2022",
-    mapbox=mapbox)
-    plot(data,layout)
+            mapbox=mapbox)
 
-    # imagename="test.png"
-    # savefig(imagename)
-
+    config=PlotConfig(displayModeBar=true,
+            toImageButtonOptions=attr(format="png",filename="RBF",height=700,width=1000,scale=1).fields)
+    
+    p=plot(data,layout,config=config)
+    display(p)
 
 end
 
 end
+
+

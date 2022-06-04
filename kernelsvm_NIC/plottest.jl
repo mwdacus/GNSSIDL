@@ -54,7 +54,7 @@ function plotmain()
 end
 
 function mapboxtest()
-    plot(contour(x=[-105.5,-105, -104.5, -104,-103.5],
+    p=plot(contour(x=[-105.5,-105, -104.5, -104,-103.5],
     y=[38,38.5,39,39.5,40,40.5],
         z=[
             0      0      1       1     1
@@ -68,8 +68,18 @@ function mapboxtest()
         contours_end=2,
         contours_size=1
     ))
-    return x,y,z
+    savefig(p,"image.png")
 end
 
-plotmain()
+p=plot(
+    scatter(
+        mode="markers",
+        x=1:10,
+        y=1:10
+    ),
+    display(p)
+) 
+
+
+
 

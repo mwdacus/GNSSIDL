@@ -108,18 +108,14 @@ function main()
     timedata.z=ecefdata[:,3]
     kdatat,kdatav,box=DataProcess.SplitData(timedata)
     #Plot Data
-    
     # newx=DataProcess.LLAConvert(kdatat.X)
     # PlotData.plotgeo(newx,kdatat.Y)
-    #Train Kernel
+    # #Train Kernel
     acc,x_test,y_test=RunKernel(kdatat,kdatav,box)
-    #PlotData.PlotContour(kdatat.X,kdatat.Y,x_test,y_test)
-    #Determine Validation Accuracy
-
-    #Plot Area of Interference
-    #newy=MargAlt(x_test,y_test)
-    #newx=DataProcess.LLAConvert(x_test)
-    #PlotData.PlotMap(newx,newy)
+    # #Plot Area of Interference
+    newy=MargAlt(x_test,y_test)
+    newx=DataProcess.LLAConvert(x_test)
+    PlotData.PlotMap(newx,newy)
     #Plot Validation Accuracy
     PlotData.PlotValAccuracy(acc)
 end
