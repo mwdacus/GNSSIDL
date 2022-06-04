@@ -109,7 +109,7 @@ end
 function PlotMap(x,z)
     mapbox=attr(style="open-street-map",
             center=attr(lat=39.861667,lon=-104.6731667),
-            zoom=8)
+            zoom=9)
     data=densitymapbox(; lat=x[1,:],lon=x[2,:],z=z,
             opacity=0.7,
             showscale=true,

@@ -49,11 +49,11 @@ end
 function RunKernel(traindata,box)
     #Train Model
     model = svmtrain(traindata.X, traindata.Y; svmtype=SVC,
-        kernel=LIBSVM.Kernel.Polynomial,degree=3,coef0=0.75,gamma=1/3)
+        kernel=LIBSVM.Kernel.Polynomial,degree=3,coef0=0.25,gamma=3.0)
         #,degree=4,coef0=.25,gamma=1/4)
     #Plot Model (Meshgrid)
-    test_range_x=range(box.X[1], box.X[2]; length=100)
-	test_range_y=range(box.Y[1], box.Y[2]; length=100)
+    test_range_x=range(-50000, 50000; length=100)
+	test_range_y=range(-50000, 50000; length=100)
     test_range_alt=range(box.ALT[1],box.ALT[2]; length=25)
     x_test=mapreduce(collect, hcat, Iterators.product(test_range_x, 
         test_range_y,test_range_alt))
@@ -114,9 +114,9 @@ function main()
     # Determine Validation Accuracy
     accfull=ValidateKernel(model,kdatav)
     # Plot Area of Interference
-    # newy=MargAlt(x_test,y_test)
-    # newx=DataProcess.LLAConvert(x_test)
-    # PlotData.PlotMap(newx,newy)
+    newy=MargAlt(x_test,y_test)
+    newx=DataProcess.LLAConvert(x_test)
+    PlotData.PlotMap(newx,newy)
     # Plot Validation Accuracy
     PlotData.PlotValAccuracy(accfull)
 end
