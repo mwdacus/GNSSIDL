@@ -20,7 +20,7 @@ function PlotValAccuracy(accdata)
     trace=bar(;x=0:length(valdata),y=valdata)
     layout=Layout(;title="Validation Accuracy of ADS-B Data",
         xaxis=attr(title="Validation Subset Number",showgrid=true),
-        yaxis=attr(title="Validation Accuracy",showgrid=true),
+        yaxis=attr(title="Validation Accuracy",showgrid=true,range=[0,1]),
         font=attr(family="Times New Roman",size=20,color="Black")
         )
     config=PlotConfig(displayModeBar=true,
