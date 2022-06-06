@@ -28,7 +28,7 @@ function ValidateKernel(model,valdata)
     acc=Array{Float64}(undef,numval)
     for i=1:numval
         n=size(valdata.X,2)
-            randsampind=rand(1:n,100)
+            randsampind=rand(1:n,500)
             randsampx=valdata.X[:,randsampind]
             randsampy=valdata.Y[randsampind]
         
@@ -43,6 +43,27 @@ function ValidateKernel(model,valdata)
         acc[i]=num/n
     end
     return acc
+end
+
+#Create Confusion Matrix
+function Confusion(model,valdata)
+    numval=50
+    allconf=Array{Matrix{Float64}}(undef,numval)
+    for i=1:numval    
+        n=size(valdata.X,2)
+        randsampind=rand(1:n,500)
+        randsampx=valdata.X[:,randsampind]
+        randsampy=valdata.Y[randsampind]
+        confusion=zeros(3,3)
+        ŷ, _ = svmpredict(model, randsampx)
+        n=length(ŷ)
+        for j=1:n
+            confusion[Int(randsampy[j])+1,Int(ŷ[j])+1]=
+                confusion[Int(randsampy[j])+1,Int(ŷ[j])+1]+1.0
+        end
+        allconf[i]=confusion
+    end
+    return allconf
 end
 
 #Train Kernel
@@ -106,82 +127,20 @@ function main()
     timedata.y=ecefdata[:,2]
     timedata.z=ecefdata[:,3]
     kdatat,kdatav,box=DataProcess.SplitData(timedata)
-    #Plot Data
-    #newx=DataProcess.LLAConvert(kdatat.X)
-    #PlotData.plotgeo(newx,kdatat.Y)
     # Train Kernel
     model,x_test,y_test=RunKernel(kdatat,box)
     # Determine Validation Accuracy
     accfull=ValidateKernel(model,kdatav)
+    #Confusion Matrix
+    conf=Confusion(model,kdatav)
     # Plot Area of Interference
     newy=MargAlt(x_test,y_test)
     newx=DataProcess.LLAConvert(x_test)
     PlotData.PlotMap(newx,newy)
     # Plot Validation Accuracy
     PlotData.PlotValAccuracy(accfull)
+    return conf
 end
 
 #Main Script
-main()
-
-#Old Code:
-    # function testmain()
-    #     filename,rawdata=DataProcess.FileUpload()
-    #     timedata=DataProcess.ReClock(rawdata)
-    #     timedata=sort!(timedata)
-    #     ecefdata=DataProcess.ENUConvert(timedata)
-    #     #Add ECEF Coordinbates to timetable
-    #     timedata.x=ecefdata[:,1]
-    #     timedata.y=ecefdata[:,2]
-    #     timedata.z=ecefdata[:,3]
-    #     testKernelTime(timedata)
-    #     #newy=reshape(y_test,(Int(sqrt(length(y_test))),Int(sqrt(length(y_test)))))
-    #     #PlotData.PlotContour(x_test,y_test,rbfdatat.X,rbfdatat.Y)
-    # end
-
-    #Function that Iterates by Hour
-    # function KernelHour(rawdata)
-    #     timedata=DataProcess.ReClock(rawdata)
-    #     timedata=sort!(timedata)
-    #     #Convert to ENU
-    #     ecefdata=DataProcess.ENUConvert(timedata)
-    #     timedata.x=ecefdata[:,1]
-    #     timedata.y=ecefdata[:,2]
-    #     timedata.z=ecefdata[:,3]
-    #     #Sort by hours
-    #     Hour=hour.(timedata.mintime)
-    #     uniquehours=unique(Hour)
-    #     n_hours=length(uniquehours)
-    #     accfull=Vector{Vector{Float64}}(undef,n_hours)
-    #     centerfull=Vector{Array{Float64}}(undef,n_hours)
-    #     #run per hour
-    #     for i=1:n_hours
-    #         hourind=findall(x->x==uniquehours[i],Hour)
-    #         accfull[i]=KernelTime(timedata[hourind,:])
-    #     end
-    #     return accful #centerfull
-    # end
-
-    #Simple Average NIC Value Algorithm
-    # function AverageNic(data)
-    #     adsb_points=DataProcess.RowVec2Matrix(data)
-    #     indnic0=findall(x->x==0,data.Y)
-    #     nic0points=adsb_points[indnic0,:]
-    #     lat=mean(nic0points[:,1])
-    #     lon=mean(nic0points[:,2])
-    #     varlat=var(nic0points[:,1])
-    #     varlon=var(nic0points[:,2])
-    #     return lat, lon, varlat, varlon
-    # end
-    #Test Functions
-    # function testKernelTime(timedata)
-    #     Min=minute.(timedata.mintime)
-    #     ind=findall(x->15<x<30,Min)
-    #     filtereddata=timedata[ind,:]
-    #     rbfdatat,rbfdatav,box=DataProcess.SplitData(filtereddata)
-    #     #Train Kernel
-    #     acc,x_test,y_test=RunKernel(rbfdatat,box)
-    #     newy=MargAlt(x_test,y_test)
-    #     newx=DataProcess.LLAConvert(x_test)
-    #     PlotData.PlotMap(newx,newy)
-    # end
+c=main()
