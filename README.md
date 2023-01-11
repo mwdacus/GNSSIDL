@@ -1,9 +1,5 @@
-# BankAngle
-Determines the Bank Angle of an Aircraft using ADS-B Data.
+# GNSS Interference
+Classifies regions of airspace based on the reported ADS-B's NIC value (Navigational Integrity Category). Two Kernel Functions used:
 
-Methodology and Approach are from Junzi et al. "Reconstructing Aircraft Turn Manoeuvres for Trajectory Analyses Using ADS-B Data."
-
-
-Full Reference:
-
-Sun, Junzi & Ellerbroek, Joost & Hoekstra, Jacco. (2019). Reconstructing Aircraft Turn Manoeuvres for Trajectory Analyses Using ADS-B Data. 
+- RBF Gaussian Kernel Function
+- Polynomial Kernel Function
