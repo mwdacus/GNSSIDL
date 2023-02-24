@@ -1,0 +1,4 @@
+name = "ConeCVX"
+uuid = "dbaef361-738a-4ebf-b2f0-487a6b46ac35"
+authors = ["Michael Dacus <mwdacus@gmail.com>"]
+version = "0.1.0"
