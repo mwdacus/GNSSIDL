@@ -14,12 +14,12 @@ angle=10;
 height=30;
 cent=[1,2,0];
 %Gather simulated data
-conesimdata=Util_Data_Cone.ConeRandData(cent,angle,height);
+conesimdata=Util_Cone.ConeRandData(cent,angle,height);
 
 %% Solve Convex problem
 %Call Convex Formulation
 gamma=1;
-[A,r]=ConeCVX(conesimdata,gamma);
+[A,r]=ConeCVX([conesimdata.x conesimdata.t],gamma);
 %Define Boundaries
 boxlat=[min(conesimdata.x(:,1)),max(conesimdata.x(:,1))];
 boxlon=[min(conesimdata.x(:,2)),max(conesimdata.x(:,2))];
