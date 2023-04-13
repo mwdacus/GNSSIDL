@@ -32,22 +32,12 @@ classdef Util_Cone
         end
 
         %Plot cone as a mesh (on top of base layer and 
-        function Plot_Cone(fig,lat_yy,lon_xx,alt_zz,randomdata)
+        function Plot_Cone(fig,lat_yy,lon_xx,alt_zz)
             ax=get(fig,'CurrentAxes');
             %Setup figure
             hold(ax,"on")
             mesh(ax,lon_xx,lat_yy,alt_zz)
-            scatter3(randomdata.lon,randomdata.lat,randomdata.alt,'filled')
             hold(ax,'off')
-        end
-
-        %Filter Data (remove data below 100 meters, 
-        function [final_data]=Filter_Data(adsbdata)
-            %Filter data to 100 feet
-            filt_data=adsbdata(adsbdata.z>=100,:);
-            %Pick 1000 random samples from data
-            final_data=datasample(filt_data,500,1,'Replace',false);
-            
         end
     
         %Generate Simulated Data
