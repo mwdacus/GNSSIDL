@@ -9,11 +9,11 @@
 
 %*************************************************************************    
 
-function [final_data]=Filter_Data(adsbdata,Z,RZ)
+function [final_data]=Filter_Data(adsbdata,Z,RZ,origin)
     %Filter data to 500' AGL
     aglheight_m=500/3.28;
     agl_h=geointerp(Z,RZ,adsbdata.lat,adsbdata.lon,"spline");
-    final_data=adsbdata(agl_h>=aglheight_m,:);
+    data=adsbdata(agl_h>=aglheight_m,:);
     %Filter data by commerical aircraft 
     filename_opensky="aircraftDatabase_Opensky.csv";
     filename_mitre="aircraftDatabase_MITRE.xlsx";
@@ -24,11 +24,25 @@ function [final_data]=Filter_Data(adsbdata,Z,RZ)
     ac=unique(agl_data.icao24);
     ac_ind=ismember(ac,aircraft_reg_opensky.icao24);
     tailno=aircraft_reg_opensky.registration(ac_ind);
-    final_data.tailno=tailno;
+    data.tailno=tailno;
     %Find Part 121 Aircraft in Mitre Directory
     mitre_ind=ismember(tailno,aircraft_reg_mitre.Reg);
     part121_ac=aircraft_reg_mitre.Reg(mitre_ind);
     %Find part 121 aircraft in final table
-    final_ind=ismember(part121_ac,final_data.tailno);
-    final_data=final_data(final_ind,:);
+    final_ind=ismember(part121_ac,data.tailno);
+    data=data(final_ind,:);
+    %Determine if ENU is available in table, if not, add it to adsbdata
+    if any(contains(data.Properties.VariableNames,{'x','y','z'}))==0
+        [enudata]=ENUData(data.lat,data.lon,data.alt,origin);
+        final_data=[data enudata];
+    else
+        final_data=data;
+    end
+end
+
+%% Local Functions
+%Add ENU table to existing dataset
+function [data]=ENUData(lat,lon,alt,origin)
+    enudata=lla2enu([lat,lon,alt],origin,'ellipsoid');
+    data=array2table(enudata,'VariableNames',{'x','y','z'});
 end
