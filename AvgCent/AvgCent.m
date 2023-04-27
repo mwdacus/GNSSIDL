@@ -6,7 +6,7 @@
 %(with error ellips) from the NIC=0 position message reports
 %************************************************************************
 
-function [dens]=AvgCent(adsbdata,fig)
+function [dens]=AvgCent(adsbdata)
     %Filter to only NIC=0 Data
     nic0data=adsbdata;
     %nic0data=adsbdata(adsbdata.nic==0,:);
