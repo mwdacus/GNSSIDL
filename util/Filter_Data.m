@@ -9,7 +9,7 @@
 
 %*************************************************************************    
 
-function [final_data]=Filter_Data(adsbdata,Z,RZ,origin)
+function [final_data]=Filter_Data(adsbdata,Z,RZ)
     %Filter data to 500' AGL
     aglheight_m=500/3.28;
     agl_h=geointerp(Z,RZ,adsbdata.lat,adsbdata.lon,"spline");
@@ -31,18 +31,5 @@ function [final_data]=Filter_Data(adsbdata,Z,RZ,origin)
     %Find part 121 aircraft in final table
     final_ind=ismember(part121_ac,data.tailno);
     data=data(final_ind,:);
-    %Determine if ENU is available in table, if not, add it to adsbdata
-    if any(contains(data.Properties.VariableNames,{'x','y','z'}))==0
-        [enudata]=ENUData(data.lat,data.lon,data.alt,origin);
-        final_data=[data enudata];
-    else
-        final_data=data;
-    end
-end
-
-%% Local Functions
-%Add ENU table to existing dataset
-function [data]=ENUData(lat,lon,alt,origin)
-    enudata=lla2enu([lat,lon,alt],origin,'ellipsoid');
-    data=array2table(enudata,'VariableNames',{'x','y','z'});
+    final_data=data;
 end
