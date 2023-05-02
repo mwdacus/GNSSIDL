@@ -17,7 +17,9 @@ function [w_norm]=Density_Weight(enudata)
             if i==j
                 continue
             else
-                dist(j)=norm(enudata(:,i)-enudata(:,2),2);
+                pointi=[enudata.x(i) enudata.y(i) enudata.z(i)];
+                pointj=[enudata.x(j) enudata.y(j) enudata.z(j)];
+                dist(j)=norm(pointi-pointj,2);
             end
         end
         %Calculate weight at point i
