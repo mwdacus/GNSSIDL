@@ -10,9 +10,9 @@
 
 %************************************************************************
 
-function SVM_Fit(adsbdata,Z,RZ,boxalt)
+function SVM_Fit(adsbdata,Z,RZ,boxalt,icao)
     %Filter Data
-    filt_data=Filter_Data(adsbdata,Z,RZ);
+    filt_data=Filter_Data(adsbdata,Z,RZ,icao);
     %Implement Density Weighting Scheme
     filt_data.Weights=Density_Weight(filt_data);
     %Split Airspace into layers every 1000'
