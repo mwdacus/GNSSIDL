@@ -8,20 +8,14 @@
 
 %*************************************************************************    
 
-function [w_norm]=Density_Weight(enudata)
+function [w_norm]=Density_Euclid(x,y,alt)
+    data=[x,y,alt];
     r=100;
-    n=size(enudata,1);
+    n=size(data,1);
     dist=zeros(n,1);w=zeros(n,1);
     for i=1:n
-        for j=1:n
-            if i==j
-                continue
-            else
-                pointi=[enudata.x(i) enudata.y(i) enudata.z(i)];
-                pointj=[enudata.x(j) enudata.y(j) enudata.z(j)];
-                dist(j)=norm(pointi-pointj,2);
-            end
-        end
+        pointi=[data(i,1) data(i,2) data(i,3)];
+        dist=sum((pointi.*ones(n,3)-data).^2,2).^(.5);
         %Calculate weight at point i
         inside_rad=sum(dist>=r);
         w(i)=inside_rad/n;

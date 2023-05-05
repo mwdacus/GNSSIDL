@@ -17,7 +17,18 @@ function [final_data]=Filter_Data(adsbdata,Z,RZ,icao)
     %remove data above 10000' MSL
     filtered_data=agl_data(agl_data.alt<=12000/3.28,:);
     %Filter data by commerical aircraft 
-    final_data=filtered_data(ismember(lower(filtered_data.icao),icao),:);
+    filtered_data=filtered_data(ismember(lower(filtered_data.icao),icao),:);
+    %remove 20 percent of data points for every aircraft
+    uac=unique(filtered_data.icao);
+    ac_filt_data=cell(1,numel(uac));
+    for i=1:numel(uac)
+        acdata=filtered_data(strcmp(filtered_data.icao,uac{i}),:);
+        n=size(acdata,1);
+        nkeep=round(0.5*n);
+        ind=round(linspace(1,n,nkeep));
+        ac_filt_data{i}=acdata(ismember(1:n,ind),:);
+    end
+    final_data=vertcat(ac_filt_data{:});
 end
 
 % filename_opensky="\aircraftDatabase_Opensky.csv";
