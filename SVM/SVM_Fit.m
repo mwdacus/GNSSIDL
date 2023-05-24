@@ -10,55 +10,60 @@
 
 %************************************************************************
 
-function SVM_Fit(adsbdata,Z,RZ,icao)
+function SVM_Fit(adsbdata,Z,RZ,icao,origin)
     %Filter Data
     filt_data=Filter_Data(adsbdata,Z,RZ,icao);
     %Implement Density Weighting Scheme
     filt_data.Weights=Density_Euclid(filt_data.x,filt_data.y,filt_data.alt);
+    %Find box airspace from
+    [box_x,box_y]=BoxENU(filt_data);
     %Split Airspace into layers every 1000'
-    layerint=min(filt_data.alt)*3.28:1000:max(filt_data.alt)*3.28;
+    harddeck=round(min(filt_data.alt)*3.28,-2);
+    ceiling=round(max(filt_data.alt)*3.28,-2);
+    layerint=harddeck:3000:ceiling;
     nlayers=numel(layerint)-1;
-    %Determine Decision Boundary for each layer
-    bdata=cell(1,nlayers);
-    for h=1:nlayers
-        layerdata=filt_data((filt_data.alt*3.28<=layerint(h+1) &...
-            filt_data.alt*3.28>=layerint(h)),:);
+    %Determine Decision Boundary for each layer, fit model to each altitude
+    boundary=cell(1,nlayers);
+    for alt=1:nlayers
+        layerdata=filt_data(filt_data.alt*3.28<=layerint(alt+1),:);
         if isempty(layerdata)
             continue
         end
-        bdata(h)=DecisionBoundary(layerdata);
+        boundary{alt}=FitModel(layerdata,layerint(alt),origin,box_x,box_y);
     end
     %plot data
-    Plot_Boundary(bdata)
+    all_contours=horzcat(boundary{:});
+    Plot_Boundary(filt_data,all_contours);
 end
 
 %% Other Functions 
-%Find Decision Boundary for a set of data using Support Vector Machine
-%(SVM)
-function [h]=DecisionBoundary(layerdata)
-    Tbl=layerdata(:,ismember(layerdata.Properties.VariableNames, ...
-        {'x','y','Weights'}));
-    Y=double(layerdata.nic<=7);    
-    model=fitcsvm(Tbl,Y,'ClassNames',[0 1],'Standardize',true,...
-        'KernelFunction','rbf','BoxConstraint',1);
-
-
-    [x1Grid,x2Grid] = meshgrid(linspace(min(Tbl.x),max(Tbl.x),1000),...
-        linspace(min(Tbl.y),max(Tbl.y),1000));
-    xGrid = [x1Grid(:),x2Grid(:),ones(size(x1Grid(:),1),1)];
-    [~,scores] = predict(model,xGrid);
-    
-    figure
-    h(1:2) = gscatter(Tbl.x,Tbl.y,Y,'rb','.');
+%Plot function for adding decision boundaries
+function Plot_Boundary(adsbdata,contdata)
+    %plot ADS-B Data
+    ADSBtools.plot.plot_geo(adsbdata.time,adsbdata.lat,adsbdata.lon,adsbdata.nic,...
+        adsbdata.icao)
     hold on
-    contour(x1Grid,x2Grid,reshape(scores(:,2),size(x1Grid)),[0,0],'k');
+    ax=gca;
+    %plot contours
+    cTbl = getContourLineCoordinates(contdata); % from the file exchange
+    % Plot contour lines
+    nContours = max(cTbl.Group); 
+    colors = autumn(nContours);
+    for i = 1:nContours
+        gidx = cTbl.Group == i; 
+        geoplot(ax, cTbl.Y(gidx), cTbl.X(gidx), ... % note: x & y switched 
+            'LineWidth', 2, 'Color', colors(i,:))
+    end
 end
 
-%Plot function for adding decision boundaries
-function Plot_Boundary()
-    ADSBtools.plot.plot_3Dterrain(w,eventdata.RZ);
-    hold on
-    for i=1:numel(bdata)
+%Find box airspace enu coordinates
+function [boxx,boxy]=BoxENU(filt_data)
+    cols={'x','y'};
+    for i=1:2
+        minind(i)=find(filt_data.(cols{i})==min(filt_data.(cols{i})));
+        maxind(i)=find(filt_data.(cols{i})==max(filt_data.(cols{i})));
         
     end
+    boxx=[filt_data.x(minind(1)) filt_data.x(maxind(1))];
+    boxy=[filt_data.y(minind(2)) filt_data.y(maxind(2))];
 end
