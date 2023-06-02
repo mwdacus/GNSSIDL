@@ -13,10 +13,11 @@
 function SVM_Fit(adsbdata,Z,RZ,icao,origin)
     %Filter Data
     filt_data=Filter_Data(adsbdata,Z,RZ,icao);
+    %Find box airspace from filtered data
+    %[box_x,box_y]=BoxENU(filt_data);
     %Implement Density Weighting Scheme
-    filt_data.Weights=Density_Euclid(filt_data.x,filt_data.y,filt_data.alt);
-    %Find box airspace from
-    [box_x,box_y]=BoxENU(filt_data);
+    filt_data.Weights=Density_KDE(filt_data.lon,filt_data.lat,boxlon,boxlat);
+
     %Split Airspace into layers every 1000'
     harddeck=round(min(filt_data.alt)*3.28,-2);
     ceiling=round(max(filt_data.alt)*3.28,-2);
