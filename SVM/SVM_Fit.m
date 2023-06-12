@@ -10,7 +10,7 @@
 
 %************************************************************************
 
-function SVM_Fit(adsbdata,Z,RZ,icao,origin)
+function SVM_Fit(adsbdata,Z,RZ,icao,origin,boxlon,boxlat)
     %Filter Data
     filt_data=Filter_Data(adsbdata,Z,RZ,icao);
     %Find box airspace from filtered data
