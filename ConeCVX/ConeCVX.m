@@ -11,7 +11,7 @@
 %************************************************************************
 
 
-function [A,r] = ConeCVX(enudata,gamma)
+function [A,r] = ConeCVX(enudata,w,gamma,Z,RZ)
     data=struct('x',enudata(:,1:2),'t',enudata(:,3));
     dim=size(data.x,2);
     n=size(data.x,1);
@@ -22,11 +22,10 @@ function [A,r] = ConeCVX(enudata,gamma)
         maximize(log_det(A)-gamma*sum((u-data.t).^2))
         subject to
             for i=1:n
-                norm(A*data.x(i,:)'+r(1:2),2)+r(3)-u(i)<=data.t(i);
+                norm(A*w(i)*data.x(i,:)'+r(1:2),2)+r(3)-u(i)<=data.t(i);
             end
             u>=0;
             r(3)==min(data.t);
     cvx_end
-
 end
 
