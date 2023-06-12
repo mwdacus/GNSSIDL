@@ -25,7 +25,7 @@ function [f] = Density_KDE(x,y,boxx,boxyy)
     
     w=mvksdensity(data,data,"Kernel","normal",'bandwidth',b);
     %Dense Weight
-    alpha=.5;
+    alpha=.01;
     ep=0.01;
     %phat=normalize(w,'norm',1);
     f=max(1-alpha*w,ep)/(1/n*sum(max(1-alpha*w,ep)));
